@@ -1,0 +1,31 @@
+<li style="background-image: url('@Special.ImageUrl')" @onclick="@(() => ShowConfigurePizzaDialog(Special))">
+    <div class="pizza-info">
+        <span class="title">@Special.Name</span>
+        @Special.Description
+        <span class="price">@Special.GetFormattedBasePrice()</span>
+    </div>
+</li>
+
+@code
+{
+
+    [Parameter]
+    public PizzaSpecial Special { get; set; }
+    
+    [Parameter]
+    public EventCallback<Pizza> OnPizzaSelection { get; set; }
+
+    void ShowConfigurePizzaDialog(PizzaSpecial special)
+    {
+        var pizza = new Pizza
+                           {
+                               Special = special,
+                               SpecialId = special.Id,
+                               Size = Pizza.DefaultSize,
+                               Toppings = new List<PizzaTopping>()
+                           };
+
+        OnPizzaSelection.InvokeAsync(pizza);
+    }
+
+}

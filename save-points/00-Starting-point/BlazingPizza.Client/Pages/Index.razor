@@ -1,3 +1,91 @@
 ﻿@page "/"
+@inject HttpClient HttpClient
 
-<h1>Blazing Pizzas</h1>
+<div class="main">
+    <ul class="pizza-cards">
+        @if (!(Specials is null))
+        {
+            @foreach (var special in Specials)
+            {
+                <PizzaSpecialCard Special="@special" OnPizzaSelection="@ShowConfigureDialog"/>
+            }
+        }
+    </ul>
+</div>
+<div class="sidebar">
+    @if (Order.Pizzas.Any())
+    {
+        <div class="order-contents">
+            <h2>Your order</h2>
+
+            @foreach (var configuredPizza in Order.Pizzas)
+            {
+                <ConfiguredPizzaItem Pizza="configuredPizza" OnRemoved="@(() => RemoveConfiguredPizza(configuredPizza))" />
+            }
+        </div>
+    }
+    else
+    {
+        <div class="empty-cart">Choose a pizza<br>to get started</div>
+    }
+
+    <div class="order-total @(Order.Pizzas.Any() ? "" : "hidden")">
+        Total:
+        <span class="total-price">@Order.GetFormattedTotalPrice()</span>
+        <button class="btn btn-warning" disabled="@(Order.Pizzas.Count == 0)" @onclick="@PlaceOrder">
+            Order >
+        </button>
+    </div>
+</div>
+
+@if (ShowingConfigureDialog)
+{
+    <ConfigurePizzaDialog Pizza="@ConfiguringPizza" OnCancel="@CancelConfiguration" OnConfirm="@ConfirmConfiguration"/>
+}
+
+@code
+{
+    bool ShowingConfigureDialog { get; set; }
+    Pizza ConfiguringPizza { get; set; }
+    List<PizzaSpecial> Specials { get; set; }
+    Order Order { get; set; } = new Order();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Specials = await HttpClient.GetJsonAsync<List<PizzaSpecial>>("specials");
+    }
+
+    void ShowConfigureDialog(Pizza pizza)
+    {
+        ShowingConfigureDialog = true;
+        ConfiguringPizza = pizza;
+    }
+
+    void CancelConfiguration()
+    {
+        HideConfigurationDialog();
+    }
+
+    void ConfirmConfiguration()
+    {
+        Order.Pizzas.Add(ConfiguringPizza);
+        HideConfigurationDialog();
+    }
+
+    private void HideConfigurationDialog()
+    {
+        ShowingConfigureDialog = false;
+        ConfiguringPizza = null;
+    }
+
+    void RemoveConfiguredPizza(Pizza pizza)
+    {
+        Order.Pizzas.Remove(pizza);
+    }
+    
+    async Task PlaceOrder()
+    {
+        await HttpClient.PostJsonAsync("orders", Order);
+        Order = new Order();
+    }
+}

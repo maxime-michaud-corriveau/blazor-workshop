@@ -1,5 +1,14 @@
 ﻿@inherits LayoutComponentBase
 
+<!--
+    Side note: Self closing custom elements are, at best, non standard features (and at worse, could break an html parser). 
+    I believe Blazor sidesteps this by managing it's virtual DOM entirely in memory and not placing any custom component tags in the final markdown.
+    This may seem like a good compromise in theory (self closing elements are a nice syntactic sugar), but it also makes Blazor component non standard, 
+    meaning they can't be used from outside Blazor. Maybe a project similar to Angular Elements could be made for Blazor that wraps everything in a standard 
+    compatible package? That might actually become important someday... or not. Probably not. Who'd ever want to mix multiple ui libraries seamlessly?
+-->
+<TopBar /> 
+
 <div class="content">
     @Body
 </div>
