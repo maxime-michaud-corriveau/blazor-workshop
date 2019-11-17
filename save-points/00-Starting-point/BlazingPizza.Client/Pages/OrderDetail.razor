@@ -1,0 +1,79 @@
+@page "/myorders/{orderId:int}"
+@using System.Threading
+@inject HttpClient HttpClient
+@implements IDisposable
+@attribute [Authorize]
+
+<div class="main">
+    @if (invalidOrder)
+    {
+        <h2>Nope</h2>
+        <p>Sorry, this order could not be loaded.</p>
+    }
+    else if (order is null)
+    {
+        <text>Loading...</text>
+    }
+    else
+    {
+        <div class="track-order">
+            <div class="track-order-title">
+                <h2>Order placed @order.Order.CreatedTime.ToLongDateString()</h2>
+                <p class="ml-auto mb-0">Status:<strong>@order.StatusText</strong></p>
+            </div>
+            <div class="track-order-body">
+                <div class="track-order-details">
+                    <OrderReview Order=@order.Order/>
+                </div>
+                <div class="track-order-map">
+                    <Map Zoom="13" Markers="order.MapMarkers"/>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code
+{
+
+    [Parameter]
+    public int OrderId { get; set; }
+
+    OrderWithStatus order;
+    bool invalidOrder;
+    CancellationTokenSource cancellationToken;
+
+    protected override void OnParametersSet()
+    {
+        cancellationToken?.Cancel();
+        PollForUpdates();
+    }
+
+    private async Task PollForUpdates()
+    {
+        cancellationToken = new CancellationTokenSource();
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            try
+            {
+                invalidOrder = false;
+                order = await HttpClient.GetJsonAsync<OrderWithStatus>($"orders/{OrderId}");
+            }
+            catch (Exception e)
+            {
+                invalidOrder = true;
+                cancellationToken.Cancel();
+                Console.Error.WriteLine(e);
+            }
+
+            StateHasChanged();
+            await Task.Delay(4321);
+        }
+    }
+
+    public void Dispose()
+    {
+        cancellationToken?.Cancel();
+    }
+
+}
